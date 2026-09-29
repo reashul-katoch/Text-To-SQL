@@ -4,8 +4,15 @@ from google.genai import types
 from app.core.config import GEMINI_API_KEY, GEMINI_MODEL
 
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+def get_gemini_client():
+    if not GEMINI_API_KEY:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not configured"
+        )
 
+    return genai.Client(
+        api_key=GEMINI_API_KEY
+    )
 
 DATABASE_SCHEMA = """
 Database: text_to_sql_db
@@ -54,12 +61,14 @@ Rules:
 
 def generate_sql(question: str) -> str:
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=question,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT
-        )
-    )
+    client = get_gemini_client()
 
-    return response.text.strip()
+    models_to_try = [
+        GEMINI_MODEL,
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+    ]
+
+    last_error = None
+
+    # rest of your existing code...

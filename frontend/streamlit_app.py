@@ -348,7 +348,16 @@ if st.button("Run Query"):
                 headers=headers
             )
 
-            data = response.json()
+            
+            try:
+                data = response.json()
+            except ValueError:
+                st.error(
+                    f"API returned a non-JSON response "
+                    f"(HTTP {response.status_code})"
+                )
+                st.code(response.text)
+                st.stop()
 
             # -------------------------
             # Clarification

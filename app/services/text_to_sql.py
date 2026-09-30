@@ -1,3 +1,5 @@
+import time
+
 from google import genai
 from google.genai import types
 
@@ -13,6 +15,7 @@ def get_gemini_client():
     return genai.Client(
         api_key=GEMINI_API_KEY
     )
+
 
 DATABASE_SCHEMA = """
 Database: text_to_sql_db
@@ -71,4 +74,47 @@ def generate_sql(question: str) -> str:
 
     last_error = None
 
-    # rest of your existing code...
+    for model in models_to_try:
+
+        for attempt in range(2):
+
+            try:
+
+                print(
+                    f"Trying Gemini model: {model} "
+                    f"(attempt {attempt + 1})"
+                )
+
+                response = client.models.generate_content(
+                    model=model,
+                    contents=question,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT
+                    )
+                )
+
+                generated_sql = response.text
+
+                if not generated_sql:
+                    raise RuntimeError(
+                        f"Gemini returned an empty response "
+                        f"using model {model}"
+                    )
+
+                return generated_sql.strip()
+
+            except Exception as error:
+
+                last_error = error
+
+                print(
+                    f"Model failed: {model} "
+                    f"(attempt {attempt + 1})"
+                )
+
+                time.sleep(2)
+
+    raise RuntimeError(
+        f"All Gemini models failed. "
+        f"Last error: {last_error}"
+    )

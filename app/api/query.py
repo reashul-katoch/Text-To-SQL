@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
+from app.services.sql_validator import (
+    validate_sql,
+    apply_select_limit
+)
 from app.db import get_db
 from app.core.security import get_current_user
 from app.core.permissions import check_permission
@@ -81,6 +84,8 @@ def execute_query(
 
     sql = validation["sql"]
     operation = validation["operation"]
+    if operation == "SELECT":
+        sql = apply_select_limit(sql)
 
     # 6. Check RBAC permission
     check_permission(
@@ -110,8 +115,7 @@ def execute_query(
 
         # SELECT
         if operation == "SELECT":
-
-            rows = result.mappings().all()
+            rows = result.mappings().fetchmany(100)
 
             return {
                 "status": "success",
